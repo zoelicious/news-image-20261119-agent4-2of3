@@ -21,10 +21,13 @@ GOLD_LT = (214, 178, 105)
 GREY = (90, 86, 76)
 LINE = (60, 52, 40)
 LAND = (232, 220, 192)
-SEA = (233, 230, 214)
+SEA = (172, 207, 231)
 SKY = (213, 226, 235)
 
 FD = "/usr/share/fonts/truetype/dejavu"
+
+# handle to the page image, so scenes can paste a rotated stamp overlay
+_IMG = [None]
 
 
 def F(name, size):
@@ -116,7 +119,16 @@ def draw_flag_ru(draw, x, y, w, h):
 
 
 def draw_face(draw, cx, cy, r, hair, skin=(232, 190, 150), style="cap"):
+    # ears
+    for sx in (-1, 1):
+        draw.ellipse([cx + sx * r - 2, cy - 1, cx + sx * r + 2, cy + 5],
+                     fill=skin, outline=INK, width=1)
     draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=skin, outline=INK, width=1)
+    # soft cheek shading under the cheekbones
+    draw.arc([cx - r * 0.75, cy + r * 0.05, cx - r * 0.05, cy + r * 0.65],
+             10, 170, fill=(205, 158, 118), width=1)
+    draw.arc([cx + r * 0.05, cy + r * 0.05, cx + r * 0.75, cy + r * 0.65],
+             10, 170, fill=(205, 158, 118), width=1)
     if style == "flat":
         # straight fringe: flatter hair cap
         draw.pieslice([cx - r, cy - r, cx + r, cy + r * 0.1], 180, 360, fill=hair)
@@ -128,13 +140,37 @@ def draw_face(draw, cx, cy, r, hair, skin=(232, 190, 150), style="cap"):
         draw.polygon([(cx - r, cy - r + 3), (cx + r * 0.5, cy - r + 1),
                       (cx + r * 0.9, cy - r * 0.3), (cx - r * 0.7, cy - r * 0.15)],
                      fill=hair)
+        # hair texture
+        for dx in (-6, -1, 4):
+            draw.line([(cx + dx, cy - r + 4), (cx + dx + 3, cy - r + 8)],
+                      fill=(190, 158, 58), width=1)
     elif style == "recede":
         # receding hair: skin shows through the front hairline, grey at the sides
         draw.pieslice([cx - r, cy - r, cx + r, cy + r * 0.4], 205, 335, fill=skin)
+        # forehead wrinkles
+        draw.line([(cx - 6, cy - 8), (cx + 6, cy - 8)], fill=(185, 145, 112), width=1)
+        draw.line([(cx - 5, cy - 6), (cx + 5, cy - 6)], fill=(185, 145, 112), width=1)
+    # eyebrows
     for ex in (-r * 0.38, r * 0.38):
-        draw.ellipse([cx + ex - 2, cy - 1, cx + ex + 2, cy + 3], fill=INK)
-    draw.arc([cx - r * 0.4, cy + r * 0.15, cx + r * 0.4, cy + r * 0.75],
-             20, 160, fill=INK, width=1)
+        draw.line([(cx + ex - 4, cy - 4), (cx + ex + 4, cy - 5 if ex < 0 else cy - 4)],
+                  fill=hair, width=2)
+    # eyes: white + pupil + upper lash line
+    for ex in (-r * 0.38, r * 0.38):
+        draw.ellipse([cx + ex - 3, cy - 1, cx + ex + 3, cy + 3],
+                     fill=(255, 255, 255), outline=INK, width=1)
+        draw.ellipse([cx + ex - 1, cy, cx + ex + 1, cy + 2], fill=INK)
+        draw.line([(cx + ex - 3, cy - 1), (cx + ex + 3, cy - 1)], fill=INK, width=1)
+    # nose: bridge + nostril arc
+    draw.line([(cx, cy + 3), (cx - 1, cy + 6)], fill=(170, 125, 95), width=1)
+    draw.arc([cx - 2, cy + 5, cx + 2, cy + 8], 0, 180, fill=(170, 125, 95), width=1)
+    # mouth: lips with a centre line (slightly downturned for the receding style)
+    if style == "recede":
+        draw.arc([cx - 4, cy + 7, cx + 4, cy + 12], 200, 340, fill=(120, 40, 35), width=1)
+        draw.ellipse([cx - 4, cy + 8, cx + 4, cy + 11], fill=(165, 70, 60))
+        draw.line([(cx - 3, cy + 9), (cx + 3, cy + 9)], fill=(120, 40, 35), width=1)
+    else:
+        draw.ellipse([cx - 4, cy + 8, cx + 4, cy + 11], fill=(165, 70, 60))
+        draw.line([(cx - 4, cy + 9), (cx + 4, cy + 9)], fill=(120, 40, 35), width=1)
 
 
 def draw_leader(draw, cx, base_y, suit, tie, hair, name, style="cap"):
@@ -189,14 +225,28 @@ def draw_scales(draw, cx, cy, s=1.0):
 
 def hero_icj(draw, x, y, w, h):
     draw.rectangle([x, y, x + w, y + h], fill=(222, 214, 196))
-    # court building
-    bx, by, bw, bh = x + 16, y + 58, 150, 62
+    # court building, with brick courses, window mullions and a door
+    # (kept inside the 116px scene so its plinth never touches the kicker below)
+    bx, by, bw, bh = x + 16, y + 56, 150, 60
     draw.rectangle([bx, by, bx + bw, by + bh], fill=(246, 238, 220), outline=INK, width=1)
     draw.polygon([(bx - 6, by), (bx + bw / 2, by - 22), (bx + bw + 6, by)], fill=BRICK, outline=INK)
+    for wy, ww in [(by - 17, 46), (by - 12, 72), (by - 7, 96)]:
+        draw.line([(bx + bw / 2 - ww / 2, wy), (bx + bw / 2 + ww / 2, wy)],
+                  fill=(120, 35, 26), width=1)
+    for yy in range(by + 6, by + bh - 4, 5):
+        draw.line([(bx + 1, yy), (bx + bw - 1, yy)], fill=(214, 196, 168), width=1)
     for i in range(5):
         cx = bx + 14 + i * 30
         draw.rectangle([cx - 5, by + 10, cx + 5, by + bh - 8], fill=NAVY)
-    draw.rectangle([bx - 8, by + bh, bx + bw + 8, by + bh + 8], fill=NAVY)
+        draw.line([(cx - 5, by + 20), (cx + 5, by + 20)], fill=(255, 255, 255), width=1)
+        draw.line([(cx - 5, by + 30), (cx + 5, by + 30)], fill=(255, 255, 255), width=1)
+        draw.line([(cx - 1, by + 10), (cx - 1, by + bh - 8)], fill=(255, 255, 255), width=1)
+    # central door between the middle columns
+    draw.rectangle([bx + bw / 2 - 8, by + bh - 18, bx + bw / 2 + 8, by + bh - 8],
+                   fill=(90, 60, 35), outline=INK, width=1)
+    draw.ellipse([bx + bw / 2 + 3, by + bh - 13, bx + bw / 2 + 6, by + bh - 10],
+                 fill=GOLD_LT)
+    draw.rectangle([bx - 8, by + bh - 4, bx + bw + 8, by + bh], fill=NAVY)
     # flag of Myanmar (small) on the building
     draw.rectangle([bx + bw - 30, by + 12, bx + bw - 8, by + 26], fill=(252, 210, 60), outline=INK, width=1)
     draw.rectangle([bx + bw - 30, by + 12, bx + bw - 8, by + 17], fill=(60, 120, 70))
@@ -215,12 +265,37 @@ def hero_icj(draw, x, y, w, h):
 
 def hero_cop31(draw, x, y, w, h):
     draw.rectangle([x, y, x + w, y + h], fill=(24, 96, 92))
-    # globe
+    # globe: blue sphere with shaded side, three green continents, grid
     gx, gy, gr = x + 62, y + 62, 44
     draw.ellipse([gx - gr, gy - gr, gx + gr, gy + gr], fill=(64, 140, 190), outline=INK, width=2)
-    draw.ellipse([gx - 26, gy - 30, gx + 2, gy - 2], fill=(80, 170, 90), outline=INK, width=1)
-    draw.ellipse([gx - 4, gy + 6, gx + 28, gy + 34], fill=(80, 170, 90), outline=INK, width=1)
-    draw.arc([gx - gr, gy - gr, gx + gr, gy + gr], 200, 340, fill=(255, 255, 255), width=1)
+    # darker shading crescent on the right (day/night side)
+    draw.pieslice([gx - gr, gy - gr, gx + gr, gy + gr], 300, 65, fill=(42, 112, 162))
+    draw.pieslice([gx - gr, gy - gr, gx + gr, gy + gr], 295, 60, fill=(52, 122, 172))
+    # continents (irregular blobs, kept inside the circle)
+    draw.polygon([(gx - 30, gy - 26), (gx - 20, gy - 32), (gx - 10, gy - 26),
+                  (gx - 14, gy - 14), (gx - 20, gy - 4), (gx - 28, gy - 10),
+                  (gx - 34, gy - 18)], fill=(74, 164, 88), outline=(40, 110, 60))
+    draw.polygon([(gx - 2, gy - 30), (gx + 10, gy - 30), (gx + 18, gy - 22),
+                  (gx + 12, gy - 10), (gx + 2, gy - 12), (gx - 4, gy - 22)],
+                 fill=(74, 164, 88), outline=(40, 110, 60))
+    draw.polygon([(gx + 6, gy + 6), (gx + 20, gy + 4), (gx + 30, gy + 12),
+                  (gx + 24, gy + 26), (gx + 10, gy + 28), (gx + 2, gy + 18)],
+                 fill=(74, 164, 88), outline=(40, 110, 60))
+    draw.ellipse([gx - 34, gy + 14, gx - 26, gy + 22], fill=(74, 164, 88),
+                 outline=(40, 110, 60))
+    draw.ellipse([gx + 22, gy - 34, gx + 30, gy - 28], fill=(74, 164, 88),
+                 outline=(40, 110, 60))
+    # latitude chords + longitude arcs (grid)
+    for dy in (-22, 0, 22):
+        hw = int((gr * gr - dy * dy) ** 0.5) - 1
+        draw.line([(gx - hw, gy + dy), (gx + hw, gy + dy)],
+                  fill=(205, 228, 242), width=1)
+    draw.arc([gx - 22, gy - gr, gx + 22, gy + gr], 270, 90, fill=(205, 228, 242), width=1)
+    draw.arc([gx - 22, gy - gr, gx + 22, gy + gr], 90, 270, fill=(205, 228, 242), width=1)
+    draw.ellipse([gx - gr, gy - gr, gx + gr, gy + gr], outline=INK, width=2)
+    # highlight arc top-left
+    draw.arc([gx - gr + 4, gy - gr + 4, gx + gr - 4, gy + gr - 4], 180, 280,
+             fill=(235, 245, 252), width=2)
     # thermometer
     tx = x + 148
     draw.rounded_rectangle([tx, y + 22, tx + 16, y + 96], radius=8, fill=(255, 255, 255), outline=INK, width=1)
@@ -301,10 +376,21 @@ def scene_court(draw, x, y, w, h):
     for i in range(4):
         cx = bx + 12 + i * 28
         draw.rectangle([cx - 4, by + 6, cx + 4, by + bh - 4], fill=NAVY)
-    # gavel
-    draw.line([(x + 138, y + 14), (x + 168, y + 34)], fill=(120, 80, 40), width=4)
-    draw.rectangle([x + 150, y + 8, x + 176, y + 20], fill=(140, 95, 50), outline=INK, width=1)
-    draw.rectangle([x + 138, y + 40, x + 178, y + 46], fill=(140, 95, 50), outline=INK, width=1)
+    # big gavel: wide head, thick handle, sound block
+    draw.line([(x + 162, y + 26), (x + 144, y + 40)], fill=INK, width=8)
+    draw.line([(x + 162, y + 26), (x + 144, y + 40)], fill=(120, 80, 40), width=5)
+    draw.rectangle([x + 138, y + 8, x + 188, y + 24], fill=(140, 95, 50), outline=INK, width=2)
+    draw.line([(x + 138, y + 16), (x + 188, y + 16)], fill=(90, 55, 25), width=2)
+    draw.line([(x + 156, y + 8), (x + 156, y + 24)], fill=(90, 55, 25), width=1)
+    draw.rectangle([x + 128, y + 40, x + 186, y + 47], fill=(140, 95, 50), outline=INK, width=1)
+    # red OVERTURNED stamp, tilted, on top of the illustration
+    if _IMG[0] is not None:
+        st = Image.new("RGBA", (96, 20), (0, 0, 0, 0))
+        sd = ImageDraw.Draw(st)
+        sd.rectangle([1, 1, 94, 18], outline=BRICK, width=2)
+        sd.text((5, 4), "OVERTURNED", font=SANS_B(10), fill=BRICK)
+        st = st.rotate(-12, expand=True, resample=Image.BICUBIC)
+        _IMG[0].paste(st, (x + 92, y + 0), st)
 
 
 def scene_arctic(draw, x, y, w, h):
@@ -377,14 +463,35 @@ def scene_runner(draw, x, y, w, h):
     # track
     draw.rectangle([x, y + h - 20, x + w, y + h], fill=(180, 70, 50))
     draw.line([(x, y + h - 10), (x + w, y + h - 10)], fill=(255, 255, 255), width=1)
-    # runner (stick figure) — kept inside the 48px illustration
-    rx, ry = x + 70, y + 14
-    draw.ellipse([rx - 7, ry - 7, rx + 7, ry + 7], fill=(200, 150, 110), outline=INK, width=1)
-    draw.line([(rx, ry + 7), (rx + 4, ry + 18)], fill=INK, width=3)
-    draw.line([(rx, ry + 12), (rx - 14, ry + 4)], fill=INK, width=2)
-    draw.line([(rx, ry + 12), (rx + 14, ry + 20)], fill=INK, width=2)
-    draw.line([(rx + 4, ry + 18), (rx - 10, ry + 32)], fill=INK, width=3)
-    draw.line([(rx + 4, ry + 18), (rx + 18, ry + 30)], fill=INK, width=3)
+    # motion lines behind the runner
+    draw.line([(x + 18, y + 14), (x + 40, y + 14)], fill=(150, 140, 120), width=2)
+    draw.line([(x + 24, y + 22), (x + 44, y + 22)], fill=(150, 140, 120), width=2)
+    # runner: filled silhouette mid-stride (dark kit, skin head)
+    rx, ry = x + 78, y + 13
+    BODY = (38, 30, 26)
+    SKIN = (198, 148, 108)
+    # back leg (extended behind)
+    draw.line([(rx - 6, ry + 22), (rx - 18, ry + 26)], fill=BODY, width=6)
+    draw.line([(rx - 18, ry + 26), (rx - 26, ry + 36)], fill=BODY, width=6)
+    # front leg (bent, driving forward)
+    draw.line([(rx - 6, ry + 22), (rx + 6, ry + 28)], fill=BODY, width=6)
+    draw.line([(rx + 6, ry + 28), (rx + 14, ry + 38)], fill=BODY, width=6)
+    # shoes
+    draw.ellipse([rx - 30, ry + 34, rx - 22, ry + 39], fill=(255, 255, 255), outline=INK, width=1)
+    draw.ellipse([rx + 10, ry + 36, rx + 18, ry + 41], fill=(255, 255, 255), outline=INK, width=1)
+    # torso leaning forward + shorts
+    draw.line([(rx - 2, ry + 7), (rx - 6, ry + 22)], fill=BODY, width=8)
+    draw.ellipse([rx - 11, ry + 17, rx - 1, ry + 27], fill=BODY)
+    # back arm (swung back, bent)
+    draw.line([(rx - 3, ry + 10), (rx - 16, ry + 14)], fill=SKIN, width=5)
+    draw.line([(rx - 16, ry + 14), (rx - 20, ry + 5)], fill=SKIN, width=5)
+    # front arm (pumping forward, bent)
+    draw.line([(rx - 3, ry + 10), (rx + 10, ry + 16)], fill=SKIN, width=5)
+    draw.line([(rx + 10, ry + 16), (rx + 5, ry + 25)], fill=SKIN, width=5)
+    # head with hair + headband
+    draw.ellipse([rx - 7, ry - 7, rx + 7, ry + 7], fill=SKIN, outline=INK, width=1)
+    draw.pieslice([rx - 7, ry - 7, rx + 7, ry + 1], 180, 360, fill=(20, 16, 12))
+    draw.line([(rx - 7, ry - 3), (rx + 7, ry - 3)], fill=BRICK, width=2)
     # finish tape
     draw.line([(x + w - 30, y + 6), (x + w - 30, y + h - 20)], fill=INK, width=2)
     for i in range(6):
@@ -407,7 +514,8 @@ def scene_bars(draw, x, y, w, h):
         bx = x + 18 + i * 32
         draw.rectangle([bx, base - v, bx + bw, base], fill=NAVY if i < 4 else BRICK, outline=INK, width=1)
     f = SANS_B(13)
-    draw.text((x + w - 52, y + 4), "4.9%", font=f, fill=BRICK)
+    # label top-left, clear of every bar (tallest bar tops out at y+4)
+    draw.text((x + 8, y + 2), "4.9%", font=f, fill=BRICK)
 
 
 # ---------------------------------------------------------------- map
@@ -434,49 +542,62 @@ CONTINENTS = [
      (-35, -8), (-39, -15), (-41, -23), (-48, -28), (-53, -34), (-58, -39),
      (-65, -41), (-68, -50), (-69, -54), (-73, -50), (-73, -40), (-72, -30),
      (-70, -20), (-77, -12), (-80, -5), (-81, 1), (-79, 9)],
-    # Europe
-    [(-10, 36), (-9, 43), (-2, 48), (-4, 50), (0, 51), (4, 53), (8, 57),
-     (10, 59), (5, 60), (10, 62), (18, 69), (25, 71), (31, 70), (40, 68),
-     (44, 66), (40, 60), (35, 58), (30, 60), (28, 58), (24, 58), (21, 55),
-     (19, 54), (14, 54), (12, 55), (8, 54), (8, 57), (3, 54), (0, 51),
-     (-2, 49), (-1, 44), (-2, 43), (-9, 37), (-10, 36)],
+    # Europe (simple outer perimeter: west coast up, north coast east,
+    # east side down, Mediterranean coast back west)
+    [(-10, 36), (-9, 43), (-2, 48), (-4, 50), (0, 51), (4, 53), (8, 55),
+     (8, 57), (10, 59), (12, 57), (18, 56), (21, 55), (24, 58), (28, 59),
+     (30, 61), (32, 63), (35, 65), (40, 67), (42, 66), (40, 61), (36, 58),
+     (32, 55), (30, 51), (28, 47), (26, 44), (23, 42), (20, 44), (18, 42),
+     (15, 44), (12, 44), (8, 44), (3, 43), (0, 40), (-2, 37), (-6, 36),
+     (-10, 36)],
     # Africa
     [(-6, 35), (0, 36), (10, 37), (11, 34), (20, 32), (30, 31), (32, 31),
      (35, 28), (38, 22), (40, 15), (43, 11), (48, 11), (51, 11), (51, 2),
      (48, -5), (40, -10), (36, -18), (33, -26), (28, -33), (20, -35),
      (16, -29), (12, -18), (13, -10), (9, -1), (9, 4), (0, 5), (-8, 5),
      (-13, 8), (-17, 15), (-17, 21), (-16, 28), (-10, 31), (-6, 35)],
-    # Asia
-    [(42, 66), (50, 69), (60, 69), (70, 72), (80, 73), (95, 76), (110, 74),
-     (125, 73), (140, 72), (155, 70), (162, 66), (170, 66), (178, 65),
-     (170, 60), (162, 58), (156, 51), (142, 50), (140, 45), (135, 43),
-     (130, 42), (127, 40), (126, 38), (122, 39), (120, 35), (122, 31),
-     (120, 28), (116, 23), (110, 20), (108, 12), (105, 9), (100, 7),
-     (98, 10), (97, 16), (94, 17), (92, 21), (89, 22), (86, 20), (82, 17),
-     (80, 13), (77, 8), (74, 12), (72, 20), (68, 23), (66, 25), (61, 25),
-     (57, 26), (54, 26), (52, 28), (50, 29), (48, 30), (44, 29), (42, 33),
-     (40, 36), (36, 36), (35, 36), (33, 36), (30, 36), (27, 37), (26, 39),
-     (23, 40), (22, 44), (19, 45), (14, 45), (12, 44), (8, 44), (3, 43),
-     (0, 39), (-2, 37), (10, 37), (15, 38), (18, 40), (23, 36), (26, 36),
-     (28, 40), (28, 44), (29, 45), (30, 46), (32, 46), (33, 44), (30, 45),
-     (28, 47), (30, 50), (28, 53), (24, 56), (21, 58), (24, 59), (28, 61),
-     (30, 64), (35, 65), (40, 68), (42, 66)],
+    # Asia (simple outer perimeter: Black Sea east, Arctic coast east,
+    # Pacific coast south with a Korea bump, south coast west to the Levant)
+    [(26, 38), (28, 42), (33, 46), (38, 47), (44, 47), (50, 48), (55, 52),
+     (60, 55), (65, 58), (70, 62), (75, 66), (80, 68), (85, 70), (90, 72),
+     (95, 74), (100, 76), (110, 74), (120, 73), (130, 72), (140, 72),
+     (150, 70), (160, 68), (170, 66), (178, 65), (170, 62), (162, 58),
+     (156, 52), (142, 50), (140, 45), (135, 43), (130, 42), (128, 40),
+     (129, 37), (128, 35), (126, 35), (124, 38), (122, 39), (120, 35),
+     (122, 31), (120, 28), (116, 23), (110, 20), (108, 12), (105, 9),
+     (103, 2), (100, 7), (98, 10), (97, 16), (94, 17), (92, 21), (89, 22),
+     (86, 20), (82, 17), (80, 13), (77, 8), (74, 12), (72, 20), (68, 23),
+     (66, 25), (61, 25), (57, 26), (54, 26), (52, 28), (50, 29), (48, 30),
+     (46, 30), (44, 29), (42, 32), (40, 35), (36, 36), (33, 36), (30, 36),
+     (27, 38), (26, 38)],
+    # Arabian Peninsula (separate blob: the main Asia polygon only
+    # carries its northern edge, so the peninsula would otherwise be sea)
+    [(39, 30), (42, 28), (43, 22), (40, 17), (43, 13), (48, 14), (52, 15),
+     (55, 17), (58, 21), (57, 25), (54, 26), (51, 27), (50, 29), (48, 30),
+     (44, 30), (42, 32), (39, 30)],
     # Australia
     [(114, -22), (114, -30), (115, -35), (120, -34), (124, -33), (129, -32),
      (132, -32), (136, -35), (140, -38), (145, -38), (150, -37), (153, -32),
      (153, -27), (150, -23), (146, -19), (142, -11), (137, -12), (135, -15),
      (132, -12), (129, -15), (126, -14), (122, -17), (118, -20), (114, -22)],
+    # small island groups the main polygons skip (UK, Japan, Indonesia, NZ)
+    [(-5, 50), (-1, 53), (0, 55), (-1, 57), (-3, 58), (-5, 56), (-5, 52)],
+    [(130, 31), (133, 33), (137, 34), (140, 35), (141, 38), (140, 41),
+     (137, 39), (133, 35), (130, 33)],
+    [(95, 4), (100, 0), (105, -4), (110, -7), (115, -8), (113, -6),
+     (107, -4), (101, 1), (96, 5)],
+    [(167, -45), (170, -42), (173, -39), (176, -37), (174, -40), (170, -43)],
 ]
 
 PINS = [
-    (1, 114, 22), (2, 4, 52), (3, 30, 37), (4, 36, 45), (5, 47, 25),
-    (6, 85, 20), (7, 127, 37), (8, -42, 72), (9, -74, 41), (10, -80, 26),
+    (1, 112, 23), (2, 5, 52), (3, 31, 36), (4, 40, 46), (5, 47, 25),
+    (6, 84, 21), (7, 127, 37), (8, -42, 72), (9, -78, 41), (10, -118, 34),
     (11, -74, 5), (12, 37, -1), (13, 149, -35),
 ]
 
 BRIEF_DOTS = [
-    (25, 62), (25, 59), (15, 50), (-3, 40), (48, 15), (10, 51), (139, 35),
-    (-1, 52), (78, 21), (-95, 38), (174, -37), (107, -6), (-69, -23),
+    (24, 57), (20, 55), (15, 50), (-3, 40), (48, 15), (10, 51), (139, 35),
+    (-3, 53), (78, 21), (-95, 38), (175, -38), (110, -6), (-69, -23),
     (17, 27), (45, 24), (-98, 39), (46, 5), (-52, -10), (127, 36),
 ]
 
@@ -491,13 +612,13 @@ def draw_map(draw, x, y, w, h):
         draw.ellipse([px - 2, py - 2, px + 2, py + 2], fill=GREY)
     for n, lon, lat in PINS:
         px, py = lonlat_to_xy(lon, lat, x, y, w, h)
-        d = 17
+        d = 20
         draw.ellipse([px - d / 2, py - d / 2, px + d / 2, py + d / 2],
-                     fill=BRICK, outline=(255, 255, 255), width=1)
+                     fill=BRICK, outline=(255, 255, 255), width=2)
         s = str(n)
-        f = SANS_B(10 if len(s) < 2 else 9)
+        f = SANS_B(12 if len(s) < 2 else 11)
         tw = draw.textlength(s, font=f)
-        draw.text((px - tw / 2, py - 5), s, font=f, fill=(255, 255, 255))
+        draw.text((px - tw / 2, py - 6), s, font=f, fill=(255, 255, 255))
 
 
 # ---------------------------------------------------------------- content
@@ -616,6 +737,7 @@ SOURCES_LINE = (
 
 def main():
     img = Image.new("RGB", (W, H), CREAM)
+    _IMG[0] = img
     d = ImageDraw.Draw(img)
     X0, X1 = 10, 1014
     CW = X1 - X0
@@ -711,7 +833,7 @@ def main():
     d.text((X0, y), "WHERE IT HAPPENED", font=SANS_B(12), fill=INK)
     d.text((X0, y + 13), "Red numbers mark stories 1\u201313; grey dots mark the briefs below.",
            font=SANS(8), fill=GREY)
-    map_w, map_h = 336, 140
+    map_w, map_h = 280, 140
     draw_map(d, X0, y + 24, map_w, map_h)
 
     bx = X0 + map_w + 8
@@ -719,10 +841,10 @@ def main():
     d.text((bx, y), "ALSO ON THURSDAY 19 NOVEMBER 2026", font=SANS_B(12), fill=INK)
     d.text((bx, y + 13), "place \u00b7 what happened \u00b7 source", font=SANS_O(8), fill=GREY)
     col_w = (bw - 8) / 2
-    f_b, f_r = SANS_B(9), SANS(9)
+    f_b, f_r = SANS_B(10), SANS(10)
     for ci in range(2):
         col_items = BRIEFS[ci * 11:(ci + 1) * 11]
-        yy = y + 26
+        yy = y + 22
         cx0 = bx + ci * (col_w + 8)
         for num, place, text, src in col_items:
             num_s = "%d " % num
@@ -735,20 +857,20 @@ def main():
             nx = cx0 + d.textlength(num_s, font=f_b)
             d.text((nx, yy), head, font=f_b, fill=INK)
             d.text((nx + d.textlength(head, font=f_b), yy), lines[0], font=f_r, fill=INK)
-            yy += 11
+            yy += 12
             for ln in lines[1:]:
                 d.text((cx0, yy), ln, font=f_r, fill=INK)
-                yy += 11
+                yy += 12
 
     # ---- footer: DATE CHECK box
-    y = 888
+    y = 894
     d.rectangle([X0, y, X1, y + 60], outline=BRICK, width=2)
     f = SANS(10)
     lines = wrap(d, DATE_CHECK, f, CW - 20)
     text_block(d, X0 + 10, y + 6, lines, f, INK, leading=13)
 
     # ---- legend + sources
-    y = 956
+    y = 962
     f = SANS(9)
     lines = wrap(d, LEGEND, f, CW)
     y = text_block(d, X0, y, lines, f, INK, leading=12)
