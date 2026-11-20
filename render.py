@@ -115,17 +115,29 @@ def draw_flag_ru(draw, x, y, w, h):
     draw.rectangle([x, y + 2 * h / 3, x + w, y + h], fill=BRICK)
 
 
-def draw_face(draw, cx, cy, r, hair, skin=(232, 190, 150)):
+def draw_face(draw, cx, cy, r, hair, skin=(232, 190, 150), style="cap"):
     draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=skin, outline=INK, width=1)
-    # hair cap
-    draw.pieslice([cx - r, cy - r, cx + r, cy + r * 0.4], 180, 360, fill=hair)
+    if style == "flat":
+        # straight fringe: flatter hair cap
+        draw.pieslice([cx - r, cy - r, cx + r, cy + r * 0.1], 180, 360, fill=hair)
+    else:
+        # hair cap
+        draw.pieslice([cx - r, cy - r, cx + r, cy + r * 0.4], 180, 360, fill=hair)
+    if style == "sweep":
+        # blond side-swept fringe over the forehead
+        draw.polygon([(cx - r, cy - r + 3), (cx + r * 0.5, cy - r + 1),
+                      (cx + r * 0.9, cy - r * 0.3), (cx - r * 0.7, cy - r * 0.15)],
+                     fill=hair)
+    elif style == "recede":
+        # receding hair: skin shows through the front hairline, grey at the sides
+        draw.pieslice([cx - r, cy - r, cx + r, cy + r * 0.4], 205, 335, fill=skin)
     for ex in (-r * 0.38, r * 0.38):
         draw.ellipse([cx + ex - 2, cy - 1, cx + ex + 2, cy + 3], fill=INK)
     draw.arc([cx - r * 0.4, cy + r * 0.15, cx + r * 0.4, cy + r * 0.75],
              20, 160, fill=INK, width=1)
 
 
-def draw_leader(draw, cx, base_y, suit, tie, hair, name):
+def draw_leader(draw, cx, base_y, suit, tie, hair, name, style="cap"):
     """Seated leader behind a table; base_y is the table top."""
     body_h = 34
     draw.rectangle([cx - 34, base_y - body_h, cx + 34, base_y], fill=suit, outline=INK, width=1)
@@ -134,7 +146,7 @@ def draw_leader(draw, cx, base_y, suit, tie, hair, name):
                  fill=(255, 255, 255))
     draw.polygon([(cx - 4, base_y - body_h + 9), (cx + 4, base_y - body_h + 9),
                   (cx + 2, base_y - 6), (cx - 2, base_y - 6)], fill=tie)
-    draw_face(draw, cx, base_y - body_h - 13, 13, hair)
+    draw_face(draw, cx, base_y - body_h - 13, 13, hair, style=style)
     # nameplate
     f = SANS_B(10)
     tw = draw.textlength(name, font=f)
@@ -159,9 +171,9 @@ def hero_apec(draw, x, y, w, h):
     draw.rectangle([x + 6, table_y, x + w - 6, y + h], fill=(122, 84, 52), outline=INK, width=1)
     draw.rectangle([x + 6, table_y, x + w - 6, table_y + 5], fill=(240, 230, 210))
     step = w // 3
-    draw_leader(draw, x + step // 2, table_y, (30, 30, 34), BRICK, (226, 196, 90), "TRUMP")
-    draw_leader(draw, x + step + step // 2, table_y, (30, 30, 34), BRICK, (20, 20, 20), "XI")
-    draw_leader(draw, x + 2 * step + step // 2, table_y, (30, 30, 34), (40, 80, 160), (200, 200, 200), "PUTIN")
+    draw_leader(draw, x + step // 2, table_y, (30, 30, 34), BRICK, (226, 196, 90), "TRUMP", "sweep")
+    draw_leader(draw, x + step + step // 2, table_y, (30, 30, 34), BRICK, (20, 20, 20), "XI", "flat")
+    draw_leader(draw, x + 2 * step + step // 2, table_y, (30, 30, 34), (40, 80, 160), (200, 200, 200), "PUTIN", "recede")
 
 
 def draw_scales(draw, cx, cy, s=1.0):
@@ -222,9 +234,10 @@ def hero_cop31(draw, x, y, w, h):
     draw.text((dx + 8, dy + 8), "DRAFT DEAL \u00b7 19 NOV", font=SANS_B(9), fill=GREY)
     draw.text((dx + 8, dy + 24), "FOSSIL FUELS", font=f, fill=INK)
     draw.line([(dx + 6, dy + 36), (dx + dw - 6, dy + 30)], fill=BRICK, width=3)
-    f2 = SANS_B(10)
-    draw.text((dx + 8, dy + 46), "$120bn AID", font=f2, fill=INK)
-    draw.line([(dx + 6, dy + 52), (dx + 78, dy + 52)], fill=BRICK, width=2)
+    f2 = SANS_B(8)
+    t2 = "$120bn ADAPTATION AID"
+    draw.text((dx + 8, dy + 46), t2, font=f2, fill=INK)
+    draw.line([(dx + 6, dy + 52), (dx + 8 + draw.textlength(t2, font=f2), dy + 52)], fill=BRICK, width=2)
     # CUT stamp
     f3 = SANS_B(20)
     t = "CUT"
@@ -253,12 +266,12 @@ def scene_bridge(draw, x, y, w, h):
 
 
 def scene_riyadh(draw, x, y, w, h):
-    draw.rectangle([x, y, x + w, y + h], fill=(22, 30, 58))
+    draw.rectangle([x, y, x + w, y + h], fill=(48, 62, 104))
     for sx, sy in [(14, 10), (60, 22), (110, 8), (160, 18), (40, 34), (140, 32)]:
         draw.ellipse([x + sx, y + sy, x + sx + 2, y + sy + 2], fill=(255, 255, 255))
     # skyline
     for bx, bw, bh in [(6, 26, 26), (38, 20, 36), (64, 30, 22), (100, 22, 34), (128, 26, 24), (158, 24, 30)]:
-        draw.rectangle([x + bx, y + h - bh, x + bx + bw, y + h], fill=(60, 70, 100), outline=INK, width=1)
+        draw.rectangle([x + bx, y + h - bh, x + bx + bw, y + h], fill=(88, 102, 142), outline=INK, width=1)
     # intercept burst + missile trails
     mx, my = x + w // 2, y + 18
     for dx, dy in [(0, -10), (9, -5), (10, 5), (0, 10), (-10, 5), (-9, -5)]:
@@ -269,15 +282,15 @@ def scene_riyadh(draw, x, y, w, h):
 
 
 def scene_cyclone(draw, x, y, w, h):
-    draw.rectangle([x, y, x + w, y + h], fill=(200, 220, 230))
-    cx, cy = x + w // 2 + 14, y + h // 2 - 4
-    for r in (34, 26, 18, 10):
-        draw.arc([cx - r, cy - r, cx + r, cy + r], 20 + r * 4, 300 + r * 4, fill=NAVY, width=3)
-    draw.ellipse([cx - 5, cy - 5, cx + 5, cy + 5], fill=NAVY)
-    # coast + rain
-    draw.rectangle([x, y + h - 12, x + w, y + h], fill=(90, 150, 110))
-    for rx in (12, 40, 150, 172):
-        draw.line([(x + rx, y + 6), (x + rx - 3, y + 16)], fill=(90, 130, 180), width=2)
+    # clean white spiral on blue sea/sky, kept clear of the panel edges
+    draw.rectangle([x, y, x + w, y + h], fill=(86, 148, 196))
+    cx, cy = x + w // 2, y + h // 2 - 3
+    for r in (18, 13, 8, 4):
+        draw.arc([cx - r, cy - r, cx + r, cy + r], 30 + r * 6, 310 + r * 6,
+                 fill=(255, 255, 255), width=3)
+    draw.ellipse([cx - 3, cy - 3, cx + 3, cy + 3], fill=(255, 255, 255))
+    # coastline along the bottom
+    draw.rectangle([x, y + h - 6, x + w, y + h], fill=(96, 158, 110))
 
 
 def scene_court(draw, x, y, w, h):
@@ -326,11 +339,13 @@ def scene_stocks(draw, x, y, w, h):
 
 
 def scene_gta(draw, x, y, w, h):
-    draw.rectangle([x, y, x + w, y + h], fill=(120, 70, 160))
+    draw.rectangle([x, y, x + w, y + h], fill=(148, 88, 178))
     draw.ellipse([x + w - 52, y + 4, x + w - 12, y + 34], fill=(255, 190, 90), outline=INK, width=1)
+    # sunset band behind the skyline
+    draw.rectangle([x, y + h - 36, x + w, y + h - 18], fill=(214, 130, 80))
     # skyline
     for bx, bw, bh in [(4, 22, 26), (30, 18, 38), (52, 26, 22), (82, 20, 34), (106, 24, 28), (134, 22, 40), (160, 24, 24)]:
-        draw.rectangle([x + bx, y + h - 18 - bh, x + bx + bw, y + h - 18], fill=(50, 25, 80), outline=INK, width=1)
+        draw.rectangle([x + bx, y + h - 18 - bh, x + bx + bw, y + h - 18], fill=(78, 44, 118), outline=INK, width=1)
     draw.rectangle([x, y + h - 18, x + w, y + h], fill=(40, 40, 44))
     # car
     draw.rounded_rectangle([x + 60, y + h - 16, x + 130, y + h - 4], radius=4, fill=BRICK, outline=INK, width=1)
@@ -362,25 +377,25 @@ def scene_runner(draw, x, y, w, h):
     # track
     draw.rectangle([x, y + h - 20, x + w, y + h], fill=(180, 70, 50))
     draw.line([(x, y + h - 10), (x + w, y + h - 10)], fill=(255, 255, 255), width=1)
-    # runner (stick figure)
-    rx, ry = x + 70, y + 26
+    # runner (stick figure) — kept inside the 48px illustration
+    rx, ry = x + 70, y + 14
     draw.ellipse([rx - 7, ry - 7, rx + 7, ry + 7], fill=(200, 150, 110), outline=INK, width=1)
-    draw.line([(rx, ry + 7), (rx + 4, ry + 26)], fill=INK, width=3)
+    draw.line([(rx, ry + 7), (rx + 4, ry + 18)], fill=INK, width=3)
     draw.line([(rx, ry + 12), (rx - 14, ry + 4)], fill=INK, width=2)
     draw.line([(rx, ry + 12), (rx + 14, ry + 20)], fill=INK, width=2)
-    draw.line([(rx + 4, ry + 26), (rx - 10, ry + 40)], fill=INK, width=3)
-    draw.line([(rx + 4, ry + 26), (rx + 18, ry + 38)], fill=INK, width=3)
+    draw.line([(rx + 4, ry + 18), (rx - 10, ry + 32)], fill=INK, width=3)
+    draw.line([(rx + 4, ry + 18), (rx + 18, ry + 30)], fill=INK, width=3)
     # finish tape
     draw.line([(x + w - 30, y + 6), (x + w - 30, y + h - 20)], fill=INK, width=2)
     for i in range(6):
         draw.rectangle([x + w - 34, y + 8 + i * 7, x + w - 26, y + 11 + i * 7],
                        fill=(0, 0, 0) if i % 2 == 0 else (255, 255, 255))
-    # BANNED stamp
-    f = SANS_B(11)
+    # BANNED stamp — top right of the illustration, clear of the tape and headline
+    f = SANS_B(9)
     t = "BANNED"
     tw = draw.textlength(t, font=f)
-    draw.rectangle([x + w - tw - 14, y + h - 34, x + w - 8, y + h - 18], outline=BRICK, width=2)
-    draw.text((x + w - tw - 10, y + h - 32), t, font=f, fill=BRICK)
+    draw.rectangle([x + w - tw - 46, y + 4, x + w - 40, y + 16], outline=BRICK, width=2)
+    draw.text((x + w - tw - 42, y + 6), t, font=f, fill=BRICK)
 
 
 def scene_bars(draw, x, y, w, h):
@@ -476,11 +491,11 @@ def draw_map(draw, x, y, w, h):
         draw.ellipse([px - 2, py - 2, px + 2, py + 2], fill=GREY)
     for n, lon, lat in PINS:
         px, py = lonlat_to_xy(lon, lat, x, y, w, h)
-        d = 15
+        d = 17
         draw.ellipse([px - d / 2, py - d / 2, px + d / 2, py + d / 2],
                      fill=BRICK, outline=(255, 255, 255), width=1)
         s = str(n)
-        f = SANS_B(9 if len(s) < 2 else 8)
+        f = SANS_B(10 if len(s) < 2 else 9)
         tw = draw.textlength(s, font=f)
         draw.text((px - tw / 2, py - 5), s, font=f, fill=(255, 255, 255))
 
@@ -546,13 +561,13 @@ BRIEFS = [
     (19, "YEMEN", "Houthi rocket kills 53 soldiers at army camp.", "Reuters"),
     (20, "GERMANY", "Russian arrested for spying on US firm Palantir.", "AP"),
     (21, "INDIA\u2013JAPAN", "2+2 defence talks open in Tokyo.", "Reuters"),
-    (22, "ENGLAND", "Beat Australia by 97 runs; Duckett 133.", "AP"),
+    (22, "WELLINGTON", "Court: pay equity cuts broke rights law.", "RNZ"),
     (23, "INDIA", "\u2018Ramayana\u2019 crosses \u20b91,000 crore in 14 days.", "AP"),
     (24, "STACY KEACH", "Actor dies at 85.", "AP"),
     (25, "AUCKLAND", "GTA VI unlocks at midnight.", "RNZ"),
     (26, "JAKARTA", "Asset law passed in parliament.", "Reuters"),
     (27, "ATACAMA", "NASA spots desert bloom from space.", "NASA"),
-    (28, "GERMANY", "2027 tax forecast hits record \u20ac1 trillion.", "Reuters"),
+    (28, "PRETORIA", "Central bank holds rate at 7.25%.", "SABC"),
     (29, "CLIMATE", "Nearly all coral reefs face extinction in 50 years.", "Nature"),
     (30, "LIBYA", "Cocaine and millions of pills seized in the east.", "Reuters"),
     (31, "SAUDI ARABIA", "Danger passed in three southern cities.", "Reuters"),
@@ -563,9 +578,9 @@ BRIEFS = [
 ]
 
 REGIONS = [
-    ("ASIA 7", BRICK), ("MIDDLE EAST 3", (122, 74, 31)), ("EUROPE 11", NAVY),
-    ("AFRICA 3", (60, 120, 70)), ("AMERICAS 6", (110, 70, 140)),
-    ("OCEANIA 2", (24, 96, 92)), ("GLOBAL 3", GREY),
+    ("ASIA 7", BRICK), ("MIDDLE EAST 3", (122, 74, 31)), ("EUROPE 9", NAVY),
+    ("AFRICA 4", (60, 120, 70)), ("AMERICAS 6", (110, 70, 140)),
+    ("OCEANIA 3", (24, 96, 92)), ("GLOBAL 3", GREY),
 ]
 
 NUMBERS = [
@@ -696,31 +711,34 @@ def main():
     d.text((X0, y), "WHERE IT HAPPENED", font=SANS_B(12), fill=INK)
     d.text((X0, y + 13), "Red numbers mark stories 1\u201313; grey dots mark the briefs below.",
            font=SANS(8), fill=GREY)
-    map_w, map_h = 320, 132
-    draw_map(d, X0, y + 26, map_w, map_h)
+    map_w, map_h = 336, 140
+    draw_map(d, X0, y + 24, map_w, map_h)
 
-    bx = X0 + map_w + 12
+    bx = X0 + map_w + 8
     bw = X1 - bx
     d.text((bx, y), "ALSO ON THURSDAY 19 NOVEMBER 2026", font=SANS_B(12), fill=INK)
     d.text((bx, y + 13), "place \u00b7 what happened \u00b7 source", font=SANS_O(8), fill=GREY)
     col_w = (bw - 8) / 2
-    f_b, f_r = SANS_B(8), SANS(8)
+    f_b, f_r = SANS_B(9), SANS(9)
     for ci in range(2):
         col_items = BRIEFS[ci * 11:(ci + 1) * 11]
         yy = y + 26
         cx0 = bx + ci * (col_w + 8)
         for num, place, text, src in col_items:
-            head = "%d %s \u2014 " % (num, place)
+            num_s = "%d " % num
+            head = "%s \u2014 " % place
             rest = "%s (%s)" % (text, src)
             # wrap rest to fit under head on first line, then full width
-            first_w = col_w - d.textlength(head, font=f_b)
+            first_w = col_w - d.textlength(num_s + head, font=f_b)
             lines = wrap(d, rest, f_r, first_w)
-            d.text((cx0, yy), head, font=f_b, fill=BRICK)
-            d.text((cx0 + d.textlength(head, font=f_b), yy), lines[0], font=f_r, fill=INK)
-            yy += 10
+            d.text((cx0, yy), num_s, font=f_b, fill=BRICK)
+            nx = cx0 + d.textlength(num_s, font=f_b)
+            d.text((nx, yy), head, font=f_b, fill=INK)
+            d.text((nx + d.textlength(head, font=f_b), yy), lines[0], font=f_r, fill=INK)
+            yy += 11
             for ln in lines[1:]:
                 d.text((cx0, yy), ln, font=f_r, fill=INK)
-                yy += 10
+                yy += 11
 
     # ---- footer: DATE CHECK box
     y = 888
