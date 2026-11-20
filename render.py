@@ -75,7 +75,9 @@ def hline(draw, x0, x1, y, fill=INK, w=1):
     draw.line([(x0, y), (x1, y)], fill=fill, width=w)
 
 
-def card_frame(draw, x, y, w, h, fill=PAPER):
+def card_frame(draw, x, y, w, h, fill=(255, 255, 255)):
+    # White card face on the cream page: the dark text on pale cream was
+    # what washed out at 300px; white lifts headline/deck contrast.
     draw.rectangle([x, y, x + w - 1, y + h - 1], fill=fill, outline=INK, width=1)
 
 
@@ -325,20 +327,50 @@ def hero_cop31(draw, x, y, w, h):
 
 # ---------------------------------------------------------------- card scenes
 def scene_bridge(draw, x, y, w, h):
+    # Cable-stayed bridge, recognisable as a bridge: two towers, stay
+    # cables fanning to the deck, a train on the left span, and a broken
+    # middle span with a big explosion + smoke (the old thin arc read as
+    # an "abstract arc").
     draw.rectangle([x, y, x + w, y + h], fill=SKY)
     draw.ellipse([x + w - 30, y + 6, x + w - 8, y + 28], fill=GOLD_LT, outline=INK, width=1)
-    # sea
-    draw.rectangle([x, y + h - 16, x + w, y + h], fill=(70, 120, 170))
-    # bridge arc + deck
-    draw.arc([x + 8, y + 6, x + w - 8, y + h + 6], 180, 360, fill=INK, width=3)
-    draw.line([(x + 4, y + h - 26), (x + w - 4, y + h - 26)], fill=INK, width=3)
-    for px in (x + 30, x + w // 2, x + w - 34):
-        draw.line([(px, y + h - 26), (px, y + h - 44)], fill=INK, width=2)
-    # explosion
-    ex, ey = x + w - 52, y + 22
-    for dx, dy in [(0, -12), (10, -6), (12, 6), (0, 12), (-12, 6), (-10, -6)]:
+    # sea + waves
+    draw.rectangle([x, y + h - 12, x + w, y + h], fill=(70, 120, 170))
+    draw.line([(x + 8, y + h - 7), (x + 40, y + h - 7)], fill=(255, 255, 255), width=1)
+    draw.line([(x + w - 52, y + h - 5), (x + w - 14, y + h - 5)], fill=(255, 255, 255), width=1)
+    deck_y = y + h - 24
+    # towers
+    for tx in (x + 52, x + 140):
+        draw.rectangle([tx - 2, y + 6, tx + 2, deck_y], fill=INK)
+        draw.rectangle([tx - 5, y + 4, tx + 5, y + 8], fill=INK)
+    # stay cables from each tower top to the deck
+    for tx in (x + 52, x + 140):
+        for dx in (-38, -24, -10, 10, 24, 38):
+            draw.line([(tx, y + 8), (tx + dx, deck_y)], fill=(60, 60, 60), width=1)
+    # deck: left span + right span, broken in the middle
+    draw.rectangle([x + 4, deck_y, x + 86, deck_y + 5], fill=(40, 40, 44), outline=INK, width=1)
+    draw.rectangle([x + 106, deck_y, x + w - 4, deck_y + 5], fill=(40, 40, 44), outline=INK, width=1)
+    # broken stub tilting down into the gap
+    draw.polygon([(x + 86, deck_y), (x + 98, deck_y + 2), (x + 94, deck_y + 10),
+                  (x + 84, deck_y + 8)], fill=(40, 40, 44), outline=INK)
+    # railing posts on both spans
+    for px in (x + 16, x + 40, x + 64, x + 122, x + 152, x + 178):
+        draw.line([(px, deck_y - 5), (px, deck_y)], fill=INK, width=1)
+    draw.line([(x + 6, deck_y - 5), (x + 84, deck_y - 5)], fill=INK, width=1)
+    draw.line([(x + 108, deck_y - 5), (x + w - 6, deck_y - 5)], fill=INK, width=1)
+    # halted train on the left span
+    for cx0 in (x + 14, x + 32, x + 50):
+        draw.rectangle([cx0, deck_y - 12, cx0 + 16, deck_y - 5], fill=BRICK, outline=INK, width=1)
+        draw.rectangle([cx0 + 3, deck_y - 10, cx0 + 7, deck_y - 7], fill=(255, 255, 255))
+        draw.rectangle([cx0 + 10, deck_y - 10, cx0 + 14, deck_y - 7], fill=(255, 255, 255))
+    # explosion in the gap + smoke plume
+    ex, ey = x + 96, deck_y - 8
+    for dx, dy in [(0, -14), (11, -8), (13, 4), (5, 13), (-7, 12), (-13, 3), (-11, -9)]:
         draw.line([(ex, ey), (ex + dx, ey + dy)], fill=(230, 120, 30), width=3)
-    draw.ellipse([ex - 7, ey - 7, ex + 7, ey + 7], fill=(240, 160, 40), outline=BRICK, width=1)
+    draw.ellipse([ex - 8, ey - 8, ex + 8, ey + 8], fill=(240, 160, 40), outline=BRICK, width=1)
+    draw.ellipse([ex - 3, ey - 3, ex + 3, ey + 3], fill=(255, 220, 90))
+    for sx, sy, sr in [(x + 84, y + 6, 7), (x + 96, y + 2, 8), (x + 108, y + 7, 6)]:
+        draw.ellipse([sx - sr, sy - sr, sx + sr, sy + sr], fill=(120, 120, 120),
+                     outline=(80, 80, 80), width=1)
 
 
 def scene_riyadh(draw, x, y, w, h):
@@ -371,27 +403,29 @@ def scene_cyclone(draw, x, y, w, h):
 
 def scene_court(draw, x, y, w, h):
     draw.rectangle([x, y, x + w, y + h], fill=(222, 214, 196))
-    bx, by, bw, bh = x + 14, y + 18, 110, 30
+    # court building, narrower than before so the stamp fits clear of it
+    bx, by, bw, bh = x + 12, y + 20, 100, 28
     draw.rectangle([bx, by, bx + bw, by + bh], fill=(246, 238, 220), outline=INK, width=1)
     draw.polygon([(bx - 4, by), (bx + bw / 2, by - 12), (bx + bw + 4, by)], fill=BRICK, outline=INK)
     for i in range(4):
-        cx = bx + 12 + i * 28
+        cx = bx + 11 + i * 26
         draw.rectangle([cx - 4, by + 6, cx + 4, by + bh - 4], fill=NAVY)
-    # big gavel: wide head, thick handle, sound block
-    draw.line([(x + 162, y + 26), (x + 144, y + 40)], fill=INK, width=8)
-    draw.line([(x + 162, y + 26), (x + 144, y + 40)], fill=(120, 80, 40), width=5)
-    draw.rectangle([x + 138, y + 8, x + 188, y + 24], fill=(140, 95, 50), outline=INK, width=2)
-    draw.line([(x + 138, y + 16), (x + 188, y + 16)], fill=(90, 55, 25), width=2)
-    draw.line([(x + 156, y + 8), (x + 156, y + 24)], fill=(90, 55, 25), width=1)
-    draw.rectangle([x + 128, y + 40, x + 186, y + 47], fill=(140, 95, 50), outline=INK, width=1)
-    # red OVERTURNED stamp, tilted, on top of the illustration
+    # gavel lowered to the bottom-right, clear of the stamp zone above it
+    draw.line([(x + 160, y + 32), (x + 146, y + 44)], fill=INK, width=8)
+    draw.line([(x + 160, y + 32), (x + 146, y + 44)], fill=(120, 80, 40), width=5)
+    draw.rectangle([x + 136, y + 24, x + 184, y + 36], fill=(140, 95, 50), outline=INK, width=2)
+    draw.line([(x + 136, y + 30), (x + 184, y + 30)], fill=(90, 55, 25), width=2)
+    draw.line([(x + 160, y + 24), (x + 160, y + 36)], fill=(90, 55, 25), width=1)
+    draw.rectangle([x + 128, y + 43, x + 182, y + 47], fill=(140, 95, 50), outline=INK, width=1)
+    # red OVERTURNED stamp, small, in the clear sky at top-right —
+    # it used to sit on top of the building's roof and columns
     if _IMG[0] is not None:
-        st = Image.new("RGBA", (96, 20), (0, 0, 0, 0))
+        st = Image.new("RGBA", (72, 15), (0, 0, 0, 0))
         sd = ImageDraw.Draw(st)
-        sd.rectangle([1, 1, 94, 18], outline=BRICK, width=2)
-        sd.text((5, 4), "OVERTURNED", font=SANS_B(10), fill=BRICK)
-        st = st.rotate(-12, expand=True, resample=Image.BICUBIC)
-        _IMG[0].paste(st, (x + 92, y + 0), st)
+        sd.rectangle([1, 1, 70, 13], outline=BRICK, width=2)
+        sd.text((4, 2), "OVERTURNED", font=SANS_B(8), fill=BRICK)
+        st = st.rotate(-10, expand=True, resample=Image.BICUBIC)
+        _IMG[0].paste(st, (x + 116, y + 1), st)
 
 
 def scene_arctic(draw, x, y, w, h):
@@ -412,17 +446,22 @@ def scene_arctic(draw, x, y, w, h):
 
 
 def scene_stocks(draw, x, y, w, h):
+    # Pure line chart: the old exchange-building silhouette (triangle
+    # roof + block) read as an "odd house shape" on the chart.
     draw.rectangle([x, y, x + w, y + h], fill=(30, 90, 60))
-    # exchange building silhouette
-    draw.rectangle([x + 8, y + h - 24, x + 46, y + h], fill=(20, 60, 42), outline=INK, width=1)
-    draw.polygon([(x + 6, y + h - 24), (x + 27, y + h - 34), (x + 48, y + h - 24)], fill=(20, 60, 42), outline=INK)
-    pts = [(x + 52, y + h - 12), (x + 82, y + h - 22), (x + 104, y + h - 16),
-           (x + 132, y + h - 30), (x + 158, y + h - 34), (x + 182, y + h - 44)]
+    # faint grid
+    for gy in (y + 12, y + 24, y + 36):
+        draw.line([(x + 6, gy), (x + w - 6, gy)], fill=(60, 125, 90), width=1)
+    pts = [(x + 10, y + h - 10), (x + 42, y + h - 16), (x + 70, y + h - 12),
+           (x + 100, y + h - 24), (x + 128, y + h - 20), (x + 156, y + h - 32),
+           (x + 182, y + h - 40)]
     draw.line(pts, fill=GOLD_LT, width=3)
-    draw.polygon([(pts[-1][0] - 8, pts[-1][1]), (pts[-1][0] + 2, pts[-1][1] - 10),
-                  (pts[-1][0] + 10, pts[-1][1] + 2)], fill=GOLD_LT)
+    draw.polygon([(pts[-1][0] - 9, pts[-1][1] + 1), (pts[-1][0] + 3, pts[-1][1] - 9),
+                  (pts[-1][0] + 10, pts[-1][1] + 3)], fill=GOLD_LT)
     f = SANS_B(11)
-    draw.text((x + 56, y + 6), "ANT", font=f, fill=(255, 255, 255))
+    draw.text((x + 8, y + 5), "ANT", font=f, fill=(255, 255, 255))
+    f2 = SANS_B(9)
+    draw.text((x + w - 44, y + h - 14), "+17%", font=f2, fill=GOLD_LT)
 
 
 def scene_gta(draw, x, y, w, h):
@@ -591,10 +630,15 @@ CONTINENTS = [
 ]
 
 PINS = [
-    (1, 112, 23), (2, 5, 52), (3, 31, 36), (4, 40, 46), (5, 47, 25),
-    (6, 84, 21), (7, 127, 37), (8, -42, 72), (9, -78, 41), (10, -118, 34),
+    (1, 112, 23), (2, 5, 52), (3, 31, 36), (4, 34, 45), (5, 47, 25),
+    (6, 84, 21), (7, 127, 37), (8, -45, 64), (9, -74, 41), (10, -118, 34),
     (11, -74, 5), (12, 37, -1), (13, 149, -35),
 ]
+
+# Badge offsets (px, relative to the pin's true map point) for pins whose
+# badges would otherwise overlap a neighbour: 1 Shenzhen/7 Seoul,
+# 3 Antalya/4 Kerch/5 Riyadh. A leader line joins badge to true point.
+PIN_OFFSETS = {1: (14, 16), 3: (-20, 18), 4: (16, -12)}
 
 BRIEF_DOTS = [
     (24, 57), (20, 55), (15, 50), (-3, 40), (48, 15), (10, 51), (139, 35),
@@ -607,19 +651,29 @@ def draw_map(draw, x, y, w, h):
     draw.rectangle([x, y, x + w, y + h], fill=SEA, outline=INK, width=1)
     for poly in CONTINENTS:
         pts = [lonlat_to_xy(lon, lat, x, y, w, h) for lon, lat in poly]
-        draw.polygon(pts, fill=LAND, outline=(150, 138, 105))
+        draw.polygon(pts, fill=(228, 214, 182), outline=(140, 128, 95))
     for lon, lat in BRIEF_DOTS:
         px, py = lonlat_to_xy(lon, lat, x, y, w, h)
-        draw.ellipse([px - 2, py - 2, px + 2, py + 2], fill=GREY)
+        draw.ellipse([px - 3, py - 3, px + 3, py + 3], fill=GREY)
+    # leader lines + true-point dots first, badges on top
     for n, lon, lat in PINS:
         px, py = lonlat_to_xy(lon, lat, x, y, w, h)
-        d = 20
-        draw.ellipse([px - d / 2, py - d / 2, px + d / 2, py + d / 2],
+        dx, dy = PIN_OFFSETS.get(n, (0, 0))
+        if (dx, dy) != (0, 0):
+            draw.line([(px, py), (px + dx, py + dy)], fill=BRICK, width=2)
+            draw.ellipse([px - 3, py - 3, px + 3, py + 3], fill=BRICK,
+                         outline=(255, 255, 255), width=1)
+    for n, lon, lat in PINS:
+        px, py = lonlat_to_xy(lon, lat, x, y, w, h)
+        dx, dy = PIN_OFFSETS.get(n, (0, 0))
+        cx, cy = px + dx, py + dy
+        d = 22
+        draw.ellipse([cx - d / 2, cy - d / 2, cx + d / 2, cy + d / 2],
                      fill=BRICK, outline=(255, 255, 255), width=2)
         s = str(n)
-        f = SANS_B(12 if len(s) < 2 else 11)
+        f = SANS_B(13 if len(s) < 2 else 12)
         tw = draw.textlength(s, font=f)
-        draw.text((px - tw / 2, py - 6), s, font=f, fill=(255, 255, 255))
+        draw.text((cx - tw / 2, cy - 7), s, font=f, fill=(255, 255, 255))
 
 
 # ---------------------------------------------------------------- content
@@ -778,19 +832,19 @@ def main():
                fill=(255, 255, 255))
         cx += wd + gap
 
-    # ---- numbers strip
-    y = 134
+    # ---- numbers strip (bigger, bolder: rank 1 wins 300px on big stat numbers)
+    y = 133
     cell = CW / 6
     for i, (num, lbl) in enumerate(NUMBERS):
         x = X0 + i * cell
-        f1 = SERIF_B(23)
+        f1 = SERIF_B(26)
         d.text((x + (cell - d.textlength(num, font=f1)) / 2, y), num, font=f1,
                fill=BRICK if i % 2 == 0 else NAVY)
-        f2 = SANS(10)
-        d.text((x + (cell - d.textlength(lbl, font=f2)) / 2, y + 27), lbl, font=f2, fill=INK)
+        f2 = SANS_B(10)
+        d.text((x + (cell - d.textlength(lbl, font=f2)) / 2, y + 30), lbl, font=f2, fill=INK)
         if i:
-            d.line([(x, y + 2), (x, y + 38)], fill=(180, 170, 145), width=1)
-    hline(d, X0, X1, y + 42, fill=INK, w=1)
+            d.line([(x, y + 2), (x, y + 41)], fill=(180, 170, 145), width=1)
+    hline(d, X0, X1, y + 44, fill=INK, w=1)
 
     # ---- hero panels
     y = 180
@@ -821,12 +875,12 @@ def main():
             card["scene"](d, x + 1, yy + 1, CWd - 2, 48)
             ty = yy + 52
             badge_num(d, x + 6, ty, card["num"], 15)
-            d.text((x + 25, ty + 1), card["kicker"], font=SANS_B(8), fill=BRICK)
-            hl = wrap(d, card["headline"], SERIF_B(13), CWd - 12)
-            ty2 = text_block(d, x + 6, ty + 15, hl[:2], SERIF_B(13), INK, leading=14)
+            d.text((x + 25, ty + 1), card["kicker"], font=SANS_B(9), fill=BRICK)
+            hl = wrap(d, card["headline"], SERIF_B(14), CWd - 12)
+            ty2 = text_block(d, x + 6, ty + 15, hl[:2], SERIF_B(14), INK, leading=15)
             dk = wrap(d, card["deck"], SANS(10), CWd - 12)
             text_block(d, x + 6, ty2 + 1, dk[:3], SANS(10), INK, leading=11)
-            d.text((x + 6, yy + RH - 13), card["source"], font=SANS(8), fill=GREY)
+            d.text((x + 6, yy + RH - 13), card["source"], font=SANS(8), fill=(64, 60, 52))
             tag(d, x + CWd - 66, yy + RH - 14, card.get("tag", "REPORTED"))
 
     # ---- bottom: map + briefs
@@ -834,7 +888,7 @@ def main():
     d.text((X0, y), "WHERE IT HAPPENED", font=SANS_B(12), fill=INK)
     d.text((X0, y + 13), "Red numbers mark stories 1\u201313; grey dots mark the briefs below.",
            font=SANS(8), fill=GREY)
-    map_w, map_h = 280, 140
+    map_w, map_h = 320, 150
     draw_map(d, X0, y + 24, map_w, map_h)
 
     bx = X0 + map_w + 8
@@ -842,7 +896,10 @@ def main():
     d.text((bx, y), "ALSO ON THURSDAY 19 NOVEMBER 2026", font=SANS_B(12), fill=INK)
     d.text((bx, y + 13), "place \u00b7 what happened \u00b7 source", font=SANS_O(8), fill=GREY)
     col_w = (bw - 8) / 2
-    f_b, f_r = SANS_B(10), SANS(10)
+    # 9pt briefs: the wider map narrows the columns, and 10pt briefs
+    # would spill 70px past the DATE CHECK box; 9pt still reads cleanly
+    # at full size (briefs are not a 300px element anyway).
+    f_b, f_r = SANS_B(9), SANS(9)
     for ci in range(2):
         col_items = BRIEFS[ci * 11:(ci + 1) * 11]
         yy = y + 22
@@ -858,10 +915,10 @@ def main():
             nx = cx0 + d.textlength(num_s, font=f_b)
             d.text((nx, yy), head, font=f_b, fill=INK)
             d.text((nx + d.textlength(head, font=f_b), yy), lines[0], font=f_r, fill=INK)
-            yy += 12
+            yy += 11
             for ln in lines[1:]:
                 d.text((cx0, yy), ln, font=f_r, fill=INK)
-                yy += 12
+                yy += 11
 
     # ---- footer: DATE CHECK box
     y = 894
