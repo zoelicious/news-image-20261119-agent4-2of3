@@ -228,11 +228,12 @@ def hero_icj(draw, x, y, w, h):
     # court building, with brick courses, window mullions and a door
     # (kept inside the 116px scene so its plinth never touches the kicker below)
     bx, by, bw, bh = x + 16, y + 56, 150, 60
-    draw.rectangle([bx, by, bx + bw, by + bh], fill=(246, 238, 220), outline=INK, width=1)
+    draw.rectangle([bx, by, bx + bw, by + bh], fill=(246, 238, 220), outline=INK, width=2)
     draw.polygon([(bx - 6, by), (bx + bw / 2, by - 22), (bx + bw + 6, by)], fill=BRICK, outline=INK)
-    for wy, ww in [(by - 17, 46), (by - 12, 72), (by - 7, 96)]:
-        draw.line([(bx + bw / 2 - ww / 2, wy), (bx + bw / 2 + ww / 2, wy)],
-                  fill=(120, 35, 26), width=1)
+    # single architrave line under the pediment (the old stepped courses
+    # read as jagged stairsteps when cropped)
+    draw.line([(bx + 2, by - 2), (bx + bw - 2, by - 2)],
+              fill=(120, 35, 26), width=2)
     for yy in range(by + 6, by + bh - 4, 5):
         draw.line([(bx + 1, yy), (bx + bw - 1, yy)], fill=(214, 196, 168), width=1)
     for i in range(5):
@@ -643,10 +644,10 @@ HEROES = [
 CARDS = [
     dict(num=4, kicker="CRIMEA \u00b7 WAR", headline="Ukraine hits Kerch Bridge again",
          deck="Strike halts trains hours before the APEC summit.",
-         source="Reuters", scene=scene_bridge),
+         source="Reuters", scene=scene_bridge, tag="CLAIM"),
     dict(num=5, kicker="RIYADH \u00b7 WAR", headline="Saudis shoot down Houthi missiles",
          deck="Air defences intercept Houthi missiles over the Saudi capital.",
-         source="Reuters \u00b7 AFP", scene=scene_riyadh),
+         source="Reuters \u00b7 AFP", scene=scene_riyadh, tag="CLAIM"),
     dict(num=6, kicker="ODISHA \u00b7 STORM", headline="Cyclone Akvan nears India\u2019s coast",
          deck="Severe storm approaches the east coast; Odisha evacuates 120,000. Landfall due Friday.",
          source="Reuters", scene=scene_cyclone),
@@ -684,7 +685,7 @@ BRIEFS = [
     (21, "INDIA\u2013JAPAN", "2+2 defence talks open in Tokyo.", "Reuters"),
     (22, "WELLINGTON", "Court: pay equity cuts broke rights law.", "RNZ"),
     (23, "INDIA", "\u2018Ramayana\u2019 crosses \u20b91,000 crore in 14 days.", "AP"),
-    (24, "STACY KEACH", "Actor dies at 85.", "AP"),
+    (24, "UK", "MAIB: Bayesian had unrecognised wind vulnerability.", "gov.uk"),
     (25, "AUCKLAND", "GTA VI unlocks at midnight.", "RNZ"),
     (26, "JAKARTA", "Asset law passed in parliament.", "Reuters"),
     (27, "ATACAMA", "NASA spots desert bloom from space.", "NASA"),
@@ -719,7 +720,7 @@ DATE_CHECK = (
     "Van Gogh $190.4m sale \u00b7 Jeffries named for Speaker \u00b7 Voyager 1 one "
     "light-day \u00b7 EU \u20ac45bn Ukraine loan \u00b7 Nvidia results \u00b7 Pew 2035 \u00b7 "
     "Anthropic IPO pricing ($83) \u00b7 Gaza push began \u00b7 Carney on China ties \u00b7 "
-    "Fed minutes \u00b7 Bayesian yacht report.  NOT YET \u2014 20 NOV: COP31 close \u00b7 "
+    "Fed minutes.  NOT YET \u2014 20 NOV: COP31 close \u00b7 "
     "Cyclone Akvan landfall."
 )
 
@@ -826,7 +827,7 @@ def main():
             dk = wrap(d, card["deck"], SANS(10), CWd - 12)
             text_block(d, x + 6, ty2 + 1, dk[:3], SANS(10), INK, leading=11)
             d.text((x + 6, yy + RH - 13), card["source"], font=SANS(8), fill=GREY)
-            tag(d, x + CWd - 66, yy + RH - 14, "REPORTED")
+            tag(d, x + CWd - 66, yy + RH - 14, card.get("tag", "REPORTED"))
 
     # ---- bottom: map + briefs
     y = 714
